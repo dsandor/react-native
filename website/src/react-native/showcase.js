@@ -85,6 +85,12 @@ var apps = [
     author: 'Liubomyr Mykhalchenko (@liubko)',
   },
   {
+    name: 'Foodstand',
+    icon: 'http://a3.mzstatic.com/us/r30/Purple69/v4/33/c1/3b/33c13b88-8ec2-23c1-56bb-712ad9938290/icon350x350.jpeg',
+    link: 'https://www.thefoodstand.com/download',
+    author: 'Foodstand, Inc.',
+  },
+  {
     name: 'Hashley',
     icon: 'http://a2.mzstatic.com/us/r30/Purple4/v4/5f/19/fc/5f19fc13-e7af-cd6b-6749-cedabdaeee7d/icon350x350.png',
     link: 'https://itunes.apple.com/us/app/hashtag-by-hashley-ironic/id1022724462?mt=8',
@@ -107,6 +113,12 @@ var apps = [
     icon: 'http://a2.mzstatic.com/us/r30/Purple6/v4/9f/4a/6f/9f4a6f8c-8951-ed89-4083-74ace23df9ef/icon350x350.jpeg',
     link: 'https://itunes.apple.com/us/app/leanpub/id913517110?ls=1&mt=8',
     author: 'Leanpub',
+  },
+  {
+    name: 'LoadDocs',
+    icon: 'http://a2.mzstatic.com/us/r30/Purple3/v4/b5/ca/78/b5ca78ca-392d-6874-48bf-762293482d42/icon350x350.jpeg',
+    link: 'https://itunes.apple.com/us/app/loaddocs/id1041596066',
+    author: 'LoadDocs',
   },
   {
     name: 'Lrn',
