@@ -20,7 +20,6 @@
 #import "RCTModuleMap.h"
 #import "RCTBridgeMethod.h"
 #import "RCTPerformanceLogger.h"
-#import "RCTPerfStats.h"
 #import "RCTProfile.h"
 #import "RCTRedBox.h"
 #import "RCTSourceCode.h"
@@ -68,7 +67,6 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   NSMutableArray *_pendingCalls;
   NSMutableArray *_moduleDataByID;
   RCTModuleMap *_modulesByName;
-  CADisplayLink *_mainDisplayLink;
   CADisplayLink *_jsDisplayLink;
   NSMutableSet *_frameUpdateObservers;
 }
@@ -93,11 +91,6 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
     _moduleDataByID = [NSMutableArray new];
     _frameUpdateObservers = [NSMutableSet new];
     _jsDisplayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(_jsThreadUpdate:)];
-
-    if (RCT_DEV) {
-      _mainDisplayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(_mainThreadUpdate:)];
-      [_mainDisplayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
-    }
 
     [RCTBridge setCurrentBridge:self];
 
@@ -308,9 +301,9 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
 
 - (NSString *)moduleConfig
 {
-  NSMutableDictionary *config = [NSMutableDictionary new];
+  NSMutableArray *config = [NSMutableArray new];
   for (RCTModuleData *moduleData in _moduleDataByID) {
-    config[moduleData.name] = moduleData.config;
+    [config addObject:moduleData.config];
     if ([moduleData.instance conformsToProtocol:@protocol(RCTFrameUpdateObserver)]) {
       [_frameUpdateObservers addObject:moduleData];
 
@@ -423,6 +416,7 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   } else {
     [self.redBox showError:error];
   }
+  RCTLogError(@"Error while loading: %@", error.localizedDescription);
 
   NSDictionary *userInfo = @{@"bridge": self, @"error": error};
   [[NSNotificationCenter defaultCenter] postNotificationName:RCTJavaScriptDidFailToLoadNotification
@@ -506,9 +500,6 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   if ([RCTBridge currentBridge] == self) {
     [RCTBridge setCurrentBridge:nil];
   }
-
-  [_mainDisplayLink invalidate];
-  _mainDisplayLink = nil;
 
   // Invalidate modules
   dispatch_group_t group = dispatch_group_create();
@@ -867,21 +858,6 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   RCTProfileImmediateEvent(0, @"JS Thread Tick", 'g');
 
   RCTProfileEndEvent(0, @"objc_call", nil);
-
-  RCT_IF_DEV(
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self.perfStats.jsGraph onTick:displayLink.timestamp];
-    });
-  )
-}
-
-- (void)_mainThreadUpdate:(CADisplayLink *)displayLink
-{
-  RCTAssertMainThread();
-
-  RCTProfileImmediateEvent(0, @"VSYNC", 'g');
-
-  _modulesByName == nil ?: [self.perfStats.uiGraph onTick:displayLink.timestamp];
 }
 
 - (void)startProfiling

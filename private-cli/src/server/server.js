@@ -15,7 +15,6 @@ const parseCommandLine = require('../../../packager/parseCommandLine');
 const path = require('path');
 const Promise = require('promise');
 const runServer = require('./runServer');
-const webSocketProxy = require('../../../packager/webSocketProxy.js');
 
 /**
  * Starts the React Native Packager Server.
@@ -57,6 +56,10 @@ function _server(argv, config, resolve, reject) {
   }, {
     command: 'reset-cache',
     description: 'Removes cached files',
+    default: false,
+  }, {
+    command: 'verbose',
+    description: 'Enables logging',
     default: false,
   }]);
 
@@ -134,12 +137,9 @@ function _server(argv, config, resolve, reject) {
 }
 
 function startServer(args, config) {
-  const serverInstance = runServer(args, config, () =>
+  runServer(args, config, () =>
     console.log('\nReact packager ready.\n')
   );
-
-  webSocketProxy.attachToServer(serverInstance, '/debugger-proxy');
-  webSocketProxy.attachToServer(serverInstance, '/devtools');
 }
 
 function argToArray(arg) {
