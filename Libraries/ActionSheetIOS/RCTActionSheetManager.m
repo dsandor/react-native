@@ -16,7 +16,6 @@
 #import "RCTUIManager.h"
 
 @interface RCTActionSheetManager () <UIActionSheetDelegate>
-
 @end
 
 @implementation RCTActionSheetManager
@@ -67,6 +66,10 @@ RCT_EXPORT_METHOD(showActionSheetWithOptions:(NSDictionary *)options
   NSInteger cancelButtonIndex = options[@"cancelButtonIndex"] ? [RCTConvert NSInteger:options[@"cancelButtonIndex"]] : -1;
 
   UIViewController *controller = RCTKeyWindow().rootViewController;
+  while (controller.presentedViewController) {
+    controller = controller.presentedViewController;
+  }
+    
   if (controller == nil) {
     RCTLogError(@"Tried to display action sheet but there is no application window. options: %@", options);
     return;
@@ -139,6 +142,8 @@ RCT_EXPORT_METHOD(showActionSheetWithOptions:(NSDictionary *)options
       alertController.popoverPresentationController.permittedArrowDirections = 0;
     }
     [controller presentViewController:alertController animated:YES completion:nil];
+
+    alertController.view.tintColor = [RCTConvert UIColor:options[@"tintColor"]];
   }
 }
 
@@ -166,6 +171,17 @@ RCT_EXPORT_METHOD(showShareActionSheetWithOptions:(NSDictionary *)options
   }
 
   UIActivityViewController *shareController = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+
+  NSString *subject = [RCTConvert NSString:options[@"subject"]];
+  if (subject) {
+    [shareController setValue:subject forKey:@"subject"];
+  }
+
+  NSArray *excludedActivityTypes = [RCTConvert NSStringArray:options[@"excludedActivityTypes"]];
+  if (excludedActivityTypes) {
+    shareController.excludedActivityTypes = excludedActivityTypes;
+  }
+
   UIViewController *controller = RCTKeyWindow().rootViewController;
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
@@ -199,6 +215,8 @@ RCT_EXPORT_METHOD(showShareActionSheetWithOptions:(NSDictionary *)options
   }
 
   [controller presentViewController:shareController animated:YES completion:nil];
+
+  shareController.view.tintColor = [RCTConvert UIColor:options[@"tintColor"]];
 }
 
 #pragma mark UIActionSheetDelegate Methods

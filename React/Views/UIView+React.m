@@ -51,12 +51,12 @@
   [subview removeFromSuperview];
 }
 
-- (NSArray<UIView<RCTComponent> *> *)reactSubviews
+- (NSArray<UIView *> *)reactSubviews
 {
   return self.subviews;
 }
 
-- (UIView<RCTComponent> *)reactSuperview
+- (UIView *)reactSuperview
 {
   return self.superview;
 }
@@ -82,9 +82,9 @@
   self.bounds = bounds;
 }
 
-- (void)reactSetInheritedBackgroundColor:(UIColor *)inheritedBackgroundColor
+- (void)reactSetInheritedBackgroundColor:(__unused UIColor *)inheritedBackgroundColor
 {
-  self.backgroundColor = inheritedBackgroundColor;
+  // Does nothing by default
 }
 
 - (UIViewController *)reactViewController

@@ -12,29 +12,33 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @providesModule UIExplorerApp
- * @flow
  */
 'use strict';
 
-var React = require('react-native');
-var UIExplorerList = require('./UIExplorerList.ios');
-var {
+const React = require('react-native');
+const UIExplorerList = require('./UIExplorerList.ios');
+const SetPropertiesExampleApp = require('./SetPropertiesExampleApp');
+const RootViewSizeFlexibilityExampleApp = require('./RootViewSizeFlexibilityExampleApp');
+const {
   AppRegistry,
   NavigatorIOS,
   StyleSheet,
+  View,
+  StatusBar,
 } = React;
 
-var UIExplorerApp = React.createClass({
+class UIExplorerApp extends React.Component {
 
-  getInitialState: function() {
-    return {
+  constructor(props) {
+    super(props);
+    this.state = {
       openExternalExample: (null: ?React.Component),
     };
-  },
+  }
 
-  render: function() {
+  render() {
     if (this.state.openExternalExample) {
-      var Example = this.state.openExternalExample;
+      const Example = this.state.openExternalExample;
       return (
         <Example
           onExampleExit={() => {
@@ -45,25 +49,29 @@ var UIExplorerApp = React.createClass({
     }
 
     return (
-      <NavigatorIOS
-        style={styles.container}
-        initialRoute={{
-          title: 'UIExplorer',
-          component: UIExplorerList,
-          passProps: {
-            onExternalExampleRequested: (example) => {
-              this.setState({ openExternalExample: example, });
-            },
-          }
-        }}
-        itemWrapperStyle={styles.itemWrapper}
-        tintColor="#008888"
-      />
+      <View style={styles.container}>
+        <StatusBar barStyle="default" />
+        <NavigatorIOS
+          style={styles.container}
+          initialRoute={{
+            title: 'UIExplorer',
+            component: UIExplorerList,
+            passProps: {
+              onExternalExampleRequested: (example) => {
+                this.setState({ openExternalExample: example, });
+              },
+            }
+          }}
+          itemWrapperStyle={styles.itemWrapper}
+          tintColor="#008888"
+        />
+      </View>
     );
   }
-});
 
-var styles = StyleSheet.create({
+}
+
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -72,6 +80,8 @@ var styles = StyleSheet.create({
   },
 });
 
+AppRegistry.registerComponent('SetPropertiesExampleApp', () => SetPropertiesExampleApp);
+AppRegistry.registerComponent('RootViewSizeFlexibilityExampleApp', () => RootViewSizeFlexibilityExampleApp);
 AppRegistry.registerComponent('UIExplorerApp', () => UIExplorerApp);
 UIExplorerList.registerComponents();
 

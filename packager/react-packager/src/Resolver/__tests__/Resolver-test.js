@@ -9,35 +9,37 @@
 'use strict';
 
 jest.dontMock('../')
-  .dontMock('underscore')
-  .dontMock('../../DependencyResolver/replacePatterns');
+  .dontMock('underscore');
 
 jest.mock('path');
 
-var Promise = require('promise');
-var Resolver = require('../');
-var Module = require('../../DependencyResolver/Module');
-var Polyfill = require('../../DependencyResolver/Polyfill');
-var DependencyGraph = require('../../DependencyResolver/DependencyGraph');
+const Promise = require('promise');
+const Resolver = require('../');
+const DependencyGraph = require('node-haste');
 
-var path = require('path');
-var _ = require('underscore');
+const path = require('path');
+const _ = require('underscore');
+
+let Module;
+let Polyfill;
 
 describe('Resolver', function() {
   beforeEach(function() {
-    Polyfill.mockClear();
+    Module = require('node-haste').Module;
+    Polyfill = require('node-haste').Polyfill;
+
+    DependencyGraph.replacePatterns = require.requireActual('node-haste/lib/lib/replacePatterns');
 
     // For the polyfillDeps
-    path.join.mockImpl(function(a, b) {
-      return b;
-    });
+    path.join = jest.genMockFn().mockImpl((a, b) => b);
+
+    DependencyGraph.prototype.load.mockImpl(() => Promise.resolve());
   });
 
   class ResolutionResponseMock {
-    constructor({dependencies, mainModuleId, asyncDependencies}) {
+    constructor({dependencies, mainModuleId}) {
       this.dependencies = dependencies;
       this.mainModuleId = mainModuleId;
-      this.asyncDependencies = asyncDependencies;
     }
 
     prependDependency(dependency) {
@@ -50,10 +52,18 @@ describe('Resolver', function() {
   }
 
   function createModule(id, dependencies) {
-    var module = new Module();
+    var module = new Module({});
     module.getName.mockImpl(() => Promise.resolve(id));
     module.getDependencies.mockImpl(() => Promise.resolve(dependencies));
     return module;
+  }
+
+  function createPolyfill(id, dependencies) {
+    var polyfill = new Polyfill({});
+    polyfill.getName.mockImpl(() => Promise.resolve(id));
+    polyfill.getDependencies.mockImpl(() => Promise.resolve(dependencies));
+    polyfill.isPolyfill.mockReturnValue(true);
+    return polyfill;
   }
 
   describe('getDependencies', function() {
@@ -69,7 +79,6 @@ describe('Resolver', function() {
         return Promise.resolve(new ResolutionResponseMock({
           dependencies: deps,
           mainModuleId: 'index',
-          asyncDependencies: [],
         }));
       });
 
@@ -78,27 +87,15 @@ describe('Resolver', function() {
           expect(result.mainModuleId).toEqual('index');
           expect(result.dependencies[result.dependencies.length - 1]).toBe(module);
           expect(_.pluck(Polyfill.mock.calls, 0)).toEqual([
-            { path: 'polyfills/prelude.js',
-              id: 'polyfills/prelude.js',
-              isPolyfill: true,
-              dependencies: []
-            },
-            { path: 'polyfills/require.js',
-              id: 'polyfills/require.js',
-              isPolyfill: true,
-              dependencies: ['polyfills/prelude.js']
-            },
             { path: 'polyfills/polyfills.js',
               id: 'polyfills/polyfills.js',
               isPolyfill: true,
-              dependencies: ['polyfills/prelude.js', 'polyfills/require.js']
+              dependencies: []
             },
             { id: 'polyfills/console.js',
               isPolyfill: true,
               path: 'polyfills/console.js',
               dependencies: [
-                'polyfills/prelude.js',
-                'polyfills/require.js',
                 'polyfills/polyfills.js'
               ],
             },
@@ -106,8 +103,6 @@ describe('Resolver', function() {
               isPolyfill: true,
               path: 'polyfills/error-guard.js',
               dependencies: [
-                'polyfills/prelude.js',
-                'polyfills/require.js',
                 'polyfills/polyfills.js',
                 'polyfills/console.js'
               ],
@@ -116,8 +111,6 @@ describe('Resolver', function() {
               isPolyfill: true,
               path: 'polyfills/String.prototype.es6.js',
               dependencies: [
-                'polyfills/prelude.js',
-                'polyfills/require.js',
                 'polyfills/polyfills.js',
                 'polyfills/console.js',
                 'polyfills/error-guard.js'
@@ -127,8 +120,6 @@ describe('Resolver', function() {
               isPolyfill: true,
               path: 'polyfills/Array.prototype.es6.js',
               dependencies: [
-                'polyfills/prelude.js',
-                'polyfills/require.js',
                 'polyfills/polyfills.js',
                 'polyfills/console.js',
                 'polyfills/error-guard.js',
@@ -139,15 +130,38 @@ describe('Resolver', function() {
               isPolyfill: true,
               path: 'polyfills/Array.es6.js',
               dependencies: [
-                'polyfills/prelude.js',
-                'polyfills/require.js',
                 'polyfills/polyfills.js',
                 'polyfills/console.js',
                 'polyfills/error-guard.js',
                 'polyfills/String.prototype.es6.js',
                 'polyfills/Array.prototype.es6.js',
               ],
-            }
+            },
+            { id: 'polyfills/Object.es7.js',
+              isPolyfill: true,
+              path: 'polyfills/Object.es7.js',
+              dependencies: [
+                'polyfills/polyfills.js',
+                'polyfills/console.js',
+                'polyfills/error-guard.js',
+                'polyfills/String.prototype.es6.js',
+                'polyfills/Array.prototype.es6.js',
+                'polyfills/Array.es6.js',
+              ],
+            },
+            { id: 'polyfills/babelHelpers.js',
+              isPolyfill: true,
+              path: 'polyfills/babelHelpers.js',
+              dependencies: [
+                'polyfills/polyfills.js',
+                'polyfills/console.js',
+                'polyfills/error-guard.js',
+                'polyfills/String.prototype.es6.js',
+                'polyfills/Array.prototype.es6.js',
+                'polyfills/Array.es6.js',
+                'polyfills/Object.es7.js',
+              ],
+            },
           ]);
         });
     });
@@ -164,14 +178,14 @@ describe('Resolver', function() {
         return Promise.resolve(new ResolutionResponseMock({
           dependencies: deps,
           mainModuleId: 'index',
-          asyncDependencies: [],
         }));
       });
 
       return depResolver.getDependencies('/root/index.js', { dev: true })
         .then(function(result) {
           expect(result.mainModuleId).toEqual('index');
-          expect(DependencyGraph.mock.instances[0].getDependencies).toBeCalledWith('/root/index.js', undefined);
+          expect(DependencyGraph.mock.instances[0].getDependencies)
+              .toBeCalledWith('/root/index.js', undefined, true);
           expect(result.dependencies[0]).toBe(Polyfill.mock.instances[0]);
           expect(result.dependencies[result.dependencies.length - 1])
               .toBe(module);
@@ -191,7 +205,6 @@ describe('Resolver', function() {
         return Promise.resolve(new ResolutionResponseMock({
           dependencies: deps,
           mainModuleId: 'index',
-          asyncDependencies: [],
         }));
       });
 
@@ -203,14 +216,14 @@ describe('Resolver', function() {
               id: 'some module',
               isPolyfill: true,
               dependencies: [
-                'polyfills/prelude.js',
-                'polyfills/require.js',
                 'polyfills/polyfills.js',
                 'polyfills/console.js',
                 'polyfills/error-guard.js',
                 'polyfills/String.prototype.es6.js',
                 'polyfills/Array.prototype.es6.js',
                 'polyfills/Array.es6.js',
+                'polyfills/Object.es7.js',
+                'polyfills/babelHelpers.js',
               ]
             },
           ]);
@@ -620,7 +633,6 @@ describe('Resolver', function() {
       const resolutionResponse = new ResolutionResponseMock({
         dependencies: [module],
         mainModuleId: 'test module',
-        asyncDependencies: [],
       });
 
       resolutionResponse.getResolvedDependencyPairs = (module) => {
@@ -635,7 +647,8 @@ describe('Resolver', function() {
         createModule('test module', ['x', 'y']),
         code
       ).then(processedCode => {
-        expect(processedCode).toEqual([
+        expect(processedCode.name).toEqual('test module');
+        expect(processedCode.code).toEqual([
           '__d(\'test module\',function(global, require,' +
             ' module, exports) {  ' +
             // single line import
@@ -1024,6 +1037,27 @@ describe('Resolver', function() {
           'require("b" )',
           '});',
         ].join('\n'));
+      });
+    });
+
+    pit('should resolve polyfills', function () {
+      const depResolver = new Resolver({
+        projectRoot: '/root',
+      });
+      const polyfill = createPolyfill('test polyfill', []);
+      const code = [
+        'global.fetch = () => 1;',
+      ].join('');
+      return depResolver.wrapModule(
+        null,
+        polyfill,
+        code
+      ).then(processedCode => {
+        expect(processedCode.code).toEqual([
+          '(function(global) {',
+          'global.fetch = () => 1;',
+          "\n})(typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this);",
+        ].join(''));
       });
     });
   });

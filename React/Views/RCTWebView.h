@@ -22,7 +22,7 @@ extern NSString *const RCTJSNavigationScheme;
 @protocol RCTWebViewDelegate <NSObject>
 
 - (BOOL)webView:(RCTWebView *)webView
-shouldStartLoadForRequest:(NSMutableDictionary *)request
+shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
    withCallback:(RCTDirectEventBlock)callback;
 
 @end
@@ -31,7 +31,7 @@ shouldStartLoadForRequest:(NSMutableDictionary *)request
 
 @property (nonatomic, weak) id<RCTWebViewDelegate> delegate;
 
-@property (nonatomic, strong) NSURL *URL;
+@property (nonatomic, copy) NSDictionary *source;
 @property (nonatomic, assign) UIEdgeInsets contentInset;
 @property (nonatomic, assign) BOOL automaticallyAdjustContentInsets;
 @property (nonatomic, copy) NSString *injectedJavaScript;

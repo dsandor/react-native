@@ -8,6 +8,7 @@
  *
  * @providesModule renderApplication
  */
+
 'use strict';
 
 var Inspector = require('Inspector');
@@ -19,6 +20,8 @@ var Subscribable = require('Subscribable');
 var View = require('View');
 
 var invariant = require('invariant');
+
+var YellowBox = __DEV__ ? require('YellowBox') : null;
 
 // require BackAndroid so it sets the default handler that exits the app if no listeners respond
 require('BackAndroid');
@@ -70,8 +73,8 @@ var AppContainer = React.createClass({
       return;
     }
 
-    this.setState({
-      rootImportanceForAccessibility: modalVisible ? 'no-hide-descendants' : 'auto',
+    this.refs.accessibilityWrapper.setNativeProps({
+      importantForAccessibility: modalVisible ? 'no-hide-descendants' : 'auto',
     });
   },
 
@@ -82,17 +85,25 @@ var AppContainer = React.createClass({
         ref="main"
         collapsable={!this.state.inspectorVisible}
         style={styles.appContainer}>
-        <RootComponent
-          {...this.props.initialProps}
-          rootTag={this.props.rootTag}
-          importantForAccessibility={this.state.rootImportanceForAccessibility}/>
+        <View
+          ref="accessibilityWrapper"
+          collapsable={true}
+          style={styles.appContainer}>
+          <RootComponent
+            {...this.props.initialProps}
+            rootTag={this.props.rootTag}/>
+        </View>
         <Portal
           onModalVisibilityChanged={this.setRootAccessibility}/>
       </View>;
-
+    let yellowBox = null;
+    if (__DEV__) {
+      yellowBox = <YellowBox />;
+    }
     return this.state.enabled ?
       <View style={styles.appContainer}>
         {appView}
+        {yellowBox}
         {this.renderInspector()}
       </View> :
       appView;
